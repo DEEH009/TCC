@@ -1,0 +1,116 @@
+@page "/login"
+
+@using Services;
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+
+@inject UserService service
+@inject NavigationManager nav
+@inject ProtectedSessionStorage storage
+@inject IJSRuntime js
+
+<div class="logregcontainer">
+    <div class="registercontainer">
+        <p>
+            <label>Nome Completo</label>
+            <input type="text" @bind-value="@name"/>
+        </p>
+
+        <p>
+            <label>Senha</label>
+            <input type="password" @bind-value="@password"/>
+        </p>
+
+        <p>
+            <label>Repetir Senha</label>
+            <input type="password" @bind-value="@repeatpassword"/>
+        </p>
+
+        <p>
+            <label>Data de Nascimento</label>
+            <input type="date" @bind-value="@birth"/>
+        </p>
+
+        <p>
+            <label>Nome de Usuario</label>
+            <input type="text" @bind-value="@userId"/>
+        </p>
+
+        <button onclick="@CreateAccount">
+            Criar Conta
+        </button>
+    </div>
+    <div class="logincontainer">
+        @if (loginError != "")
+        {
+            <p>
+                <label style="color: red;">@loginError</label>
+            </p>
+        }
+        <p>
+            <label>Nome de Usuario</label>
+            <input type="text" @bind-value="@userId"/>
+        </p>
+        <p>
+            <label>Senha</label>
+            <input type="password" @bind-value="@password"/>
+        </p>
+        <button onclick="@UserLogin">
+            Logar
+        </button>
+    </div>
+</div>
+
+@code 
+{
+    private string name;
+    private string password;
+    private string repeatpassword;
+    private DateTime birth;
+    private string userId;
+    private string loginError = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        @* Exemplo de uso de JS no Blazor
+        int value = await js.InvokeAsync<int>("Exemplo", 
+            new object[] { 10 });
+        Console.WriteLine(value); *@
+    }
+
+    public async void CreateAccount()
+    {
+        await service.Register(
+
+            this.name, 
+            this.userId,
+            this.birth, 
+            this.password);
+        
+        this.name = "";
+        this.userId = "";
+        this.birth = DateTime.Now;
+        this.password = "";
+        this.repeatpassword = "";
+        this.StateHasChanged();
+    }
+    
+    public async void UserLogin()
+    {
+        var result = await service.Login(
+
+            this.userId,
+            this.password
+        );
+        
+        if (result == null)
+        {
+            loginError = "Senha ou Login Incorretos.";
+            StateHasChanged();
+            return;
+        }
+        
+        await storage.SetAsync("token", result);
+        nav.NavigateTo("/");
+    }
+}
+
